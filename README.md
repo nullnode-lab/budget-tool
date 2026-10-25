@@ -1,5 +1,7 @@
 # 💸 Grad Budget Planner
 
+**▶ Open the app: https://nullnode-lab.github.io/budget-tool/**
+
 A personal budgeting web app for a recent college graduate who lives with their parents in **East Stroudsburg, PA**. It turns your expected (or actual) salary into an estimated take-home paycheck using 2026 federal, Pennsylvania and local tax rules, then helps you split that money across categories using recommended ranges for someone living at home.
 
 - **No sign-up, no server, no database.** Everything is saved in your own browser (`localStorage`).
@@ -77,20 +79,18 @@ js/app.js         App logic: saving, rendering, charts, goals
 
 ### Option A: Use this repository (`nullnode-lab/budget-tool`)
 
-The code is already in this repository, so you only need to turn on Pages.
+The code is already on this repository's default branch, so you only need to switch Pages on. It's a one-time setting.
 
-1. Go to **https://github.com/nullnode-lab/budget-tool** and sign in.
-2. **Get the code onto your `main` branch.** If the files are on a different branch (for example a pull request branch), open the **Pull requests** tab, open the pull request and click **Merge pull request** → **Confirm merge**.
-   *If there's no pull request:* go to the **Code** tab, switch to the branch that holds `index.html`, click **Compare & pull request** → **Create pull request** → **Merge pull request**.
-   *Alternatively*, you can skip merging and pick that branch in step 5.
-3. Click **⚙️ Settings** (top menu of the repository).
-4. In the left sidebar, click **Pages**.
-5. Under **Build and deployment**:
+1. Sign in to GitHub and open **https://github.com/nullnode-lab/budget-tool/settings/pages**
+   (or: repository page → **⚙️ Settings** → **Pages** in the left sidebar).
+2. Under **Build and deployment**:
    - **Source:** `Deploy from a branch`
-   - **Branch:** `main` (or the branch that holds `index.html`), folder **`/ (root)`**
+   - **Branch:** pick the only branch in the list (the repository's default branch), folder **`/ (root)`**
    - Click **Save**.
-6. Wait 1–2 minutes and refresh the Pages settings screen. A banner appears: **"Your site is live at https://nullnode-lab.github.io/budget-tool/"**.
-7. Open that link and bookmark it (or on your phone, use **Share → Add to Home Screen** to make it feel like an app).
+3. Wait 1–2 minutes and refresh the Pages settings screen. A banner appears: **"Your site is live at https://nullnode-lab.github.io/budget-tool/"**.
+4. Open that link and bookmark it (or on your phone, use **Share → Add to Home Screen** to make it feel like an app).
+
+From then on, every change pushed to that branch redeploys the site automatically.
 
 > **Note:** On a free GitHub account, Pages only works for **public** repositories. That's fine here: the repository only holds the app's code. **Your budget numbers are never uploaded.** They live only in your browser's local storage.
 
@@ -103,7 +103,7 @@ The code is already in this repository, so you only need to turn on Pages.
 5. Drag in **everything inside** the unzipped folder: `index.html`, `README.md`, `.nojekyll`, and the `css` and `js` folders. Keep the folder structure. `index.html` must sit at the top level, not inside another folder.
    *Tip:* `.nojekyll` is a hidden file. On macOS press `Cmd + Shift + .` in Finder to show hidden files. It's optional; the site works without it.
 6. Scroll down and click **Commit changes**.
-7. Follow steps 3–7 of Option A, choosing the `main` branch and `/ (root)`.
+7. Click **⚙️ Settings → Pages** and follow steps 2–4 of Option A, choosing the `main` branch and `/ (root)`.
 
 ### Option C: Command line (if you use git)
 
@@ -116,7 +116,7 @@ git commit -m "Add budget planner"
 git push origin main
 ```
 
-Then turn on Pages as in Option A, steps 3–7.
+Then turn on Pages under **⚙️ Settings → Pages** as in Option A, steps 2–4.
 
 ### Updating the site later
 
