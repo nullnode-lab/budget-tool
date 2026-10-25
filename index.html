@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Grad Budget Planner</title>
+  <meta name="description" content="A personal budgeting tool for a recent college graduate living at home in East Stroudsburg, PA. Data stays in your browser.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💸</text></svg>">
+  <link rel="stylesheet" href="css/styles.css">
+  <script>
+    // Apply the saved theme before first paint to avoid a flash.
+    (function () {
+      try {
+        var t = JSON.parse(localStorage.getItem('gradBudget.v1') || '{}').theme;
+        if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+      } catch (e) { /* storage unavailable: fall back to the OS theme */ }
+    })();
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="app-header">
+    <div class="wrap header-row">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">💸</span>
+        <div>
+          <h1>Grad Budget Planner</h1>
+          <p class="brand-sub">East Stroudsburg, PA · <span id="save-status" aria-live="polite">Saved in this browser</span></p>
+        </div>
+      </div>
+      <div class="header-controls">
+        <div class="seg" role="radiogroup" aria-label="Pay cycle" id="pay-cycle">
+          <button type="button" role="radio" data-cycle="monthly">Monthly</button>
+          <button type="button" role="radio" data-cycle="biweekly">Bi-weekly</button>
+          <button type="button" role="radio" data-cycle="weekly">Weekly</button>
+        </div>
+        <button type="button" class="icon-btn" id="theme-toggle" aria-label="Switch color theme" title="Switch color theme">◐</button>
+      </div>
+    </div>
+    <nav class="wrap tabs" role="tablist" aria-label="Sections">
+      <button type="button" role="tab" id="tab-dashboard" aria-controls="panel-dashboard" data-tab="dashboard">Dashboard</button>
+      <button type="button" role="tab" id="tab-income" aria-controls="panel-income" data-tab="income">Income &amp; Taxes</button>
+      <button type="button" role="tab" id="tab-budget" aria-controls="panel-budget" data-tab="budget">Budget</button>
+      <button type="button" role="tab" id="tab-goals" aria-controls="panel-goals" data-tab="goals">Savings Goals</button>
+      <button type="button" role="tab" id="tab-plan" aria-controls="panel-plan" data-tab="plan">Game Plan</button>
+      <button type="button" role="tab" id="tab-settings" aria-controls="panel-settings" data-tab="settings">Settings</button>
+    </nav>
+  </header>
+
+  <main id="main" class="wrap">
+
+    <!-- DASHBOARD -->
+    <section id="panel-dashboard" role="tabpanel" aria-labelledby="tab-dashboard" class="panel">
+      <div id="dash-banner"></div>
+      <div class="stat-row" id="dash-stats"></div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-head">
+            <h2>Where your take-home pay goes</h2>
+            <p class="muted small" id="dash-chart-sub"></p>
+          </div>
+          <div class="donut-layout">
+            <div class="donut-wrap">
+              <canvas id="spend-chart" aria-label="Spending breakdown chart" role="img"></canvas>
+              <div class="donut-center" id="donut-center"></div>
+              <p class="chart-fallback" id="chart-fallback" hidden>Chart unavailable (Chart.js couldn't load, perhaps you're offline). The table shows the same numbers.</p>
+            </div>
+            <table class="legend-table" id="dash-legend">
+              <caption class="sr-only">Budget by category</caption>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <h2>Budget health check</h2>
+            <p class="muted small">Plain-English checks against recommended ranges for someone living at home.</p>
+          </div>
+          <ul class="checks" id="dash-checks"></ul>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>Needs · Wants · Savings</h2>
+          <p class="muted small">The classic 50/30/20 rule assumes you pay full rent. Living at home, your needs are lower, so the difference should go to savings and debt payoff.</p>
+        </div>
+        <div class="mix-row" id="dash-mix"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head card-head-row">
+          <h2>Savings goals</h2>
+          <button type="button" class="btn btn-ghost" data-goto="goals">Manage goals →</button>
+        </div>
+        <div id="dash-goals" class="goal-mini-list"></div>
+      </div>
+    </section>
+
+    <!-- INCOME & TAXES -->
+    <section id="panel-income" role="tabpanel" aria-labelledby="tab-income" class="panel" hidden>
+      <div class="card">
+        <div class="card-head">
+          <h2>Your income</h2>
+          <p class="muted small">Job hunting? Enter the salary you're targeting as <strong>Expected</strong>. Enter any current pay (part-time job, internship) as <strong>Actual</strong>. Then pick which one your budget uses.</p>
+        </div>
+        <div class="field-row">
+          <span class="field-label" id="basis-label">Build my budget from</span>
+          <div class="seg" role="radiogroup" aria-labelledby="basis-label" id="income-basis">
+            <button type="button" role="radio" data-basis="expected">Expected income</button>
+            <button type="button" role="radio" data-basis="actual">Actual income</button>
+          </div>
+        </div>
+        <div class="grid-2 tight" id="income-sources"></div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-head">
+            <h2>Paycheck deductions</h2>
+            <p class="muted small">These come out before the money reaches your bank account.</p>
+          </div>
+          <div class="form-grid">
+            <label class="field">
+              <span class="field-label">401(k) contribution <span class="muted">(% of gross pay)</span></span>
+              <input type="number" id="k401Pct" min="0" max="100" step="0.5" inputmode="decimal">
+              <span class="hint">If your job offers a match, contribute at least enough to get all of it. No 401(k) yet? Set this to 0.</span>
+            </label>
+            <label class="field">
+              <span class="field-label">401(k) type</span>
+              <select id="k401Type">
+                <option value="traditional">Traditional (pre-tax)</option>
+                <option value="roth">Roth 401(k) (after-tax)</option>
+              </select>
+              <span class="hint">Traditional lowers federal tax now; Roth is taxed now and tax-free later. PA taxes both now.</span>
+            </label>
+            <label class="field">
+              <span class="field-label">Employer match <span class="muted">(matches up to % of pay)</span></span>
+              <input type="number" id="matchPct" min="0" max="25" step="0.5" inputmode="decimal">
+              <span class="hint">E.g. "100% match up to 4%" → enter 4. It's free money and isn't part of take-home pay.</span>
+            </label>
+            <label class="field">
+              <span class="field-label">Pre-tax health, dental &amp; vision <span class="muted">($ per month)</span></span>
+              <input type="number" id="healthMonthly" min="0" step="1" inputmode="decimal">
+              <span class="hint">You can stay on a parent's plan until age 26, which may make this $0.</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <h2>Pennsylvania &amp; local taxes</h2>
+            <p class="muted small">PA has a flat 3.07% income tax, plus a local earned income tax (EIT) based on where you live and a Local Services Tax (LST) based on where you work.</p>
+          </div>
+          <div class="form-grid">
+            <label class="field">
+              <span class="field-label">Municipality you live in</span>
+              <select id="localPreset"></select>
+              <span class="hint" id="localPresetHint"></span>
+            </label>
+            <label class="field">
+              <span class="field-label">Local earned income tax (EIT) <span class="muted">(%)</span></span>
+              <input type="number" id="eitRate" min="0" max="5" step="0.05" inputmode="decimal">
+              <span class="hint">Look up your exact rate by PSD code at <a href="https://dced.pa.gov/local-government/local-income-tax-information/psd-codes-and-eit-rates/" target="_blank" rel="noopener">PA DCED (PSD codes &amp; EIT rates)</a>.</span>
+            </label>
+            <label class="field check-field">
+              <input type="checkbox" id="lstEnabled">
+              <span>
+                <span class="field-label">Local Services Tax (LST)</span>
+                <span class="hint">Most PA employers withhold up to $52/yr; you're exempt if you earn under $12,000.</span>
+              </span>
+            </label>
+            <label class="field">
+              <span class="field-label">LST amount <span class="muted">($ per year, max $52)</span></span>
+              <input type="number" id="lstAmount" min="0" max="52" step="1" inputmode="decimal">
+            </label>
+            <label class="field check-field">
+              <input type="checkbox" id="paForgiveness">
+              <span>
+                <span class="field-label">Apply PA Tax Forgiveness</span>
+                <span class="hint">Only for very low incomes (single: under ~$8,750/yr) and only if your parents do <em>not</em> claim you as a dependent.</span>
+              </span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>Estimated paycheck</h2>
+          <p class="muted small" id="paycheck-sub"></p>
+        </div>
+        <div class="table-scroll">
+          <table class="data-table" id="paycheck-table"></table>
+        </div>
+        <div id="paycheck-notes" class="notes"></div>
+      </div>
+    </section>
+
+    <!-- BUDGET -->
+    <section id="panel-budget" role="tabpanel" aria-labelledby="tab-budget" class="panel" hidden>
+      <div class="card budget-summary" id="budget-summary"></div>
+      <div class="budget-help" id="budget-help"></div>
+      <div id="category-list"></div>
+      <div class="card add-category">
+        <button type="button" class="btn" id="add-category">+ Add a custom category</button>
+        <button type="button" class="btn btn-ghost" id="reset-budget">Reset budget to recommended defaults</button>
+      </div>
+    </section>
+
+    <!-- GOALS -->
+    <section id="panel-goals" role="tabpanel" aria-labelledby="tab-goals" class="panel" hidden>
+      <div class="card">
+        <div class="card-head card-head-row">
+          <div>
+            <h2>Savings goals</h2>
+            <p class="muted small">Link a goal to a budget line and its monthly amount counts toward the goal automatically. Log money as you actually move it to savings.</p>
+          </div>
+          <button type="button" class="btn btn-primary" id="add-goal">+ New goal</button>
+        </div>
+        <div id="goal-tips" class="tip-grid"></div>
+      </div>
+      <div id="goal-list" class="goal-list"></div>
+    </section>
+
+    <!-- GAME PLAN -->
+    <section id="panel-plan" role="tabpanel" aria-labelledby="tab-plan" class="panel" hidden>
+      <div class="card">
+        <div class="card-head">
+          <h2>Your money game plan</h2>
+          <p class="muted small">A step-by-step order of operations used by financial planners. Check steps off as you go; progress is saved.</p>
+        </div>
+        <div class="progress-line" id="plan-progress"></div>
+        <div id="plan-checklist"></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2>Money words, explained</h2></div>
+        <dl class="glossary">
+          <dt>Gross pay</dt><dd>Your pay before anything is taken out. A "$50,000 salary" is gross pay.</dd>
+          <dt>Take-home (net) pay</dt><dd>What actually lands in your bank account after taxes and deductions. This budget is built on take-home pay.</dd>
+          <dt>FICA</dt><dd>Social Security (6.2%) and Medicare (1.45%) taxes. Every paycheck pays these; there's no standard deduction for them.</dd>
+          <dt>EIT &amp; LST</dt><dd>Pennsylvania local taxes. The Earned Income Tax is a % of your pay set by where you live (about 1% around East Stroudsburg). The Local Services Tax is a small flat fee (up to $52/yr) set by where you work.</dd>
+          <dt>401(k) &amp; employer match</dt><dd>A retirement account through your job. A "match" means your employer adds money when you contribute: free money you should always collect.</dd>
+          <dt>Roth IRA</dt><dd>A retirement account you open yourself. You put in money you've already paid tax on; it grows and comes out tax-free after age 59½. Contributions (not earnings) can be withdrawn anytime.</dd>
+          <dt>High-yield savings account (HYSA)</dt><dd>A savings account, usually at an online bank, that pays much more interest than a regular one. The right home for an emergency fund.</dd>
+          <dt>Index fund</dt><dd>A low-cost fund that owns hundreds or thousands of companies at once, so you don't have to pick stocks. A simple, proven way to invest for the long run.</dd>
+          <dt>Sinking fund</dt><dd>Money you set aside a little at a time for a known future expense, like a car down payment or apartment deposit.</dd>
+          <dt>Credit utilization</dt><dd>How much of your credit card limit you're using. Keeping it under ~30% (ideally under 10%) and paying in full every month builds a strong credit score.</dd>
+        </dl>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section id="panel-settings" role="tabpanel" aria-labelledby="tab-settings" class="panel" hidden>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-head">
+            <h2>Your data</h2>
+            <p class="muted small">Everything is saved in this browser's local storage. Nothing is sent to a server. Clearing your browser data, or using a different browser or device, means starting over, so download a backup now and then.</p>
+          </div>
+          <div class="btn-stack">
+            <button type="button" class="btn" id="export-data">⬇ Download backup (.json)</button>
+            <label class="btn file-btn">⬆ Restore from backup
+              <input type="file" id="import-data" accept="application/json,.json">
+            </label>
+            <button type="button" class="btn btn-danger" id="reset-all">Erase everything and start over</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>Display</h2></div>
+          <label class="field">
+            <span class="field-label">Color theme</span>
+            <select id="theme-select">
+              <option value="auto">Match my device</option>
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+            </select>
+          </label>
+          <div class="notes">
+            <p><strong>About the numbers.</strong> Tax estimates use 2026 federal brackets (single filer, standard deduction), Social Security and Medicare, Pennsylvania's 3.07% income tax, PA unemployment withholding (0.07%), your local EIT and the LST. Real paychecks vary with your W-4, benefits and employer payroll timing. This tool is for planning and education, not tax or investment advice.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="wrap app-footer">
+    <p class="muted small">Built for planning, not as tax or investment advice. Your data never leaves this browser.</p>
+  </footer>
+
+  <!-- Goal editor -->
+  <dialog id="goal-dialog" aria-labelledby="goal-dialog-title">
+    <form method="dialog" id="goal-form">
+      <h2 id="goal-dialog-title">Savings goal</h2>
+      <div class="form-grid">
+        <label class="field narrow"><span class="field-label">Emoji</span><input type="text" name="goalEmoji" maxlength="4"></label>
+        <label class="field"><span class="field-label">Goal name</span><input type="text" name="goalName" required maxlength="60"></label>
+        <label class="field"><span class="field-label">Target amount ($)</span><input type="number" name="goalTarget" min="1" step="1" required inputmode="decimal"></label>
+        <label class="field"><span class="field-label">Already saved ($)</span><input type="number" name="goalSaved" min="0" step="1" inputmode="decimal"></label>
+        <label class="field"><span class="field-label">Target date <span class="muted">(optional)</span></span><input type="month" name="goalDate"></label>
+        <label class="field"><span class="field-label">Funded by budget line</span><select name="goalLink"></select></label>
+        <label class="field"><span class="field-label">Monthly contribution ($)</span><input type="number" name="goalMonthly" min="0" step="1" inputmode="decimal">
+          <span class="hint">Used only when the goal isn't linked to a budget line.</span></label>
+      </div>
+      <div class="dialog-actions">
+        <button type="button" class="btn btn-ghost" value="cancel" data-close>Cancel</button>
+        <button type="submit" class="btn btn-primary" value="save">Save goal</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Add / withdraw money -->
+  <dialog id="deposit-dialog" aria-labelledby="deposit-dialog-title">
+    <form method="dialog" id="deposit-form">
+      <h2 id="deposit-dialog-title">Log money</h2>
+      <p class="muted small" id="deposit-goal-name"></p>
+      <div class="seg" role="radiogroup" aria-label="Deposit or withdrawal" id="deposit-kind">
+        <button type="button" role="radio" data-kind="add" aria-checked="true">Add</button>
+        <button type="button" role="radio" data-kind="withdraw" aria-checked="false">Withdraw</button>
+      </div>
+      <label class="field"><span class="field-label">Amount ($)</span><input type="number" name="depositAmount" min="0.01" step="0.01" required inputmode="decimal"></label>
+      <div class="dialog-actions">
+        <button type="button" class="btn btn-ghost" data-close>Cancel</button>
+        <button type="submit" class="btn btn-primary" value="save">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js"></script>
+  <script src="js/tax.js"></script>
+  <script src="js/defaults.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
